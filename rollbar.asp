@@ -100,7 +100,6 @@ Private Sub Rollbar(strLevel, strMessage, strExtraPayload, objError)
     strPayload = strPayload & "}"
     strPayload = strPayload & "}"
 
-    response.write strPayload
     Call GetURLPostJSON("https://api.rollbar.com/api/1/item/", 1, strPayload, "", "")
     On Error Goto 0
 
