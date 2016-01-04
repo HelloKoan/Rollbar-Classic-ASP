@@ -63,7 +63,8 @@ Private Sub Rollbar(strLevel, strMessage, strExtraPayload, objError)
     strPayload = strPayload & "    { "
     strPayload = strPayload & "        ""message"": "
     strPayload = strPayload & "        {"
-    strPayload = strPayload & "            ""body"": """&strMessage&""""
+    strPayload = strPayload & "            ""body"": """&PrepareForRollbar(strMessage)&""","
+    strPayload = strPayload & "            ""session"": """&PrepareForRollbar(GetSessionAsString())&""""
     If strExtraPayload <> "" Then
         strPayload = strPayload & ","
         strPayload = strPayload & strExtraPayload
@@ -111,7 +112,8 @@ End Sub
 Function PrepareForRollbar(strData)
     strData = EnsureIsTrimmedString(strData)
     strData = Replace(strData, """", "")
-    strData = Replace(strData, VbCrLf, " ")
+    strData = Replace(strData, "\", "\\")
+    strData = Replace(strData, VbCrLf, "\n")
     PrepareForRollbar = strData
 End Function
 
@@ -121,5 +123,58 @@ Function EnsureIsTrimmedString(ByVal strString)
         strString = Trim(strString)
     End If
     EnsureIsTrimmedString = strString 
+End Function
+
+Function GetSessionAsString()
+    On Error Resume Next
+    Dim sessionItem, strSession
+    strSession = ""
+    For Each sessionItem in Session.Contents
+        If IsArray(Session(sessionItem)) Then
+            strSession = strSession & sessionItem & "=" & PrintArray(Session(sessionItem)) & VbCrLf
+        Else
+            strSession = strSession & sessionItem & "=" & Session(sessionItem) & VbCrLf
+        End If
+    Next
+    GetSessionAsString = strSession
+End Function
+
+Function PrintArray(aryArray)
+	On Error Resume Next
+	Dim i, j, k, strOut, strElement, aryDimensions(10), strDimensions
+	i=0
+	strDimensions = ""
+	For Each strElement in aryArray
+		i = i + 1
+	Next
+	j = 0
+	k=1
+	Do While j >= 0 AND k < 10
+		j = UBound(aryArray, k)
+		If j > 0 Then
+			strDimensions = strDimensions & j & ","
+			aryDimensions(k-1) = j
+		End If
+		j = 0
+		k = k + 1
+	Loop
+	If strDimensions <> "" Then
+		strDimensions = Left(strDimensions, Len(strDimensions)-1)
+	End If
+	strOut = "Array ("&strDimensions&"): " & VbCrLf
+    strOut = strOut & "----------" & VbCrLf
+	j=0
+	For Each strElement in aryArray
+		strOut = strOut & strElement
+		j = j + 1
+		If j = aryDimensions(0)+1 Then
+			strOut = strOut & VbCrLf
+			j=0
+		Else
+			strOut = strOut & ","
+		End If
+	Next	
+    strOut = strOut & "----------"
+	PrintArray = strOut
 End Function
 %>
