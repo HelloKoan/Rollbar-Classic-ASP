@@ -101,7 +101,7 @@ Private Sub Rollbar(strLevel, strMessage, strExtraPayload, objError)
     strPayload = strPayload & "}"
     strPayload = strPayload & "}"
 
-    Call GetURLPostJSON("https://api.rollbar.com/api/1/item/", 1, strPayload, "", "")
+    Call GetURLPostJSON("https://api.rollbar.com/api/1/item/", 1, strPayload)
     On Error Goto 0
 
     If strLevel = "error" Then
@@ -162,7 +162,7 @@ Function PrintArray(aryArray)
 		strDimensions = Left(strDimensions, Len(strDimensions)-1)
 	End If
 	strOut = "Array ("&strDimensions&"): " & VbCrLf
-    strOut = strOut & "----------" & VbCrLf
+	strOut = strOut & "----------" & VbCrLf
 	j=0
 	For Each strElement in aryArray
 		strOut = strOut & strElement
@@ -176,5 +176,61 @@ Function PrintArray(aryArray)
 	Next	
     strOut = strOut & "----------"
 	PrintArray = strOut
+End Function
+
+Function GetURLPostJSON(strUrl, lTimeout, strData)
+    Dim objHttp, GotResponse, intSecondsWait
+    On Error Resume Next
+    GetURLPostJSON = ""    
+        
+    Set objHttp = Server.CreateObject("MSXML2.ServerXMLHTTP")
+    If lTotal = 0 Then
+        objHttp.open strMethod, strUrl, True
+    Else
+        objHttp.setTimeouts lTotal*1000/4, lTotal*1000/4, lTotal*1000/4, lTotal*1000
+        objHttp.open strMethod, strUrl, False 
+    End if
+    objHttp.setRequestHeader "Content-Type", "application/json"
+    objHttp.send strData
+    If lTotal = 0 Then
+        Set objHttp = Nothing
+        Exit Function
+    End If
+    
+    intSecondsWait  = 0
+    GotResponse     = False
+    Do While objHttp.readyState <> 4
+        If Err.Number <> 0 Then
+            Exit Do
+        End If
+        
+        objHttp.waitForResponse 1
+        intSecondsWait = intSecondsWait + 1
+        
+        If objHttp.readyState = 4 Then
+            GotResponse = True
+            Exit Do
+        End If
+        If intSecondsWait > lTotal Then
+            GotResponse = False
+            Exit Do
+        End If
+    Loop
+    If objHttp.readyState = 4 Then
+        GotResponse = True
+    End If
+    
+    If GotResponse AND Err.Number = 0 Then
+        If objHttp.status >= 200 AND objHttp.status <= 299 Then
+	    GetURLPostJSON = objHTTP.ResponseText 
+        End If
+        
+    ElseIf Err.Number <> 0 Then
+        Err.Clear
+    End If
+    
+    Set objHttp = Nothing
+    
+    On Error Goto 0
 End Function
 %>
